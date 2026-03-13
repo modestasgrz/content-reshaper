@@ -1,0 +1,35 @@
+[project]
+name = "content-reshaper"
+version = "0.1.0"
+description = "CLI script that repurposes a YouTube video into 5 content formats using Gemini"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=1.0.0",
+    "youtube-transcript-api>=0.6.0",
+    "python-dotenv>=1.0.0",
+    "loguru>=0.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9.0",
+    "mypy>=1.0.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
