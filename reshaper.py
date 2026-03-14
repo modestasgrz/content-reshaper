@@ -6,8 +6,9 @@ from urllib.parse import parse_qs, urlparse
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import errors as genai_errors
 from loguru import logger
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, YouTubeTranscriptApiException
 
 from prompts.blog_post import PROMPT as BLOG_POST
 from prompts.email_newsletter import PROMPT as EMAIL_NEWSLETTER
@@ -32,16 +33,23 @@ def extract_video_id(url: str) -> str:
 
 def fetch_transcript(video_id: str) -> str:
     logger.info(f"Fetching transcript for {video_id}...")
-    entries = YouTubeTranscriptApi.get_transcript(video_id)  # type: ignore[attr-defined]
+    try:
+        entries = YouTubeTranscriptApi().fetch(video_id).to_raw_data()
+    except YouTubeTranscriptApiException as e:
+        raise RuntimeError(f"Could not fetch transcript for {video_id}: {e}") from e
     return " ".join(entry["text"] for entry in entries)
 
 
 async def generate(client: genai.Client, prompt: str, transcript: str) -> str:
-    response = await client.aio.models.generate_content(
-        model=MODEL,
-        contents=f"{prompt}\n\n{transcript}",
-    )
-    assert response.text is not None
+    try:
+        response = await client.aio.models.generate_content(
+            model=MODEL,
+            contents=f"{prompt}\n\n{transcript}",
+        )
+    except genai_errors.APIError as e:
+        raise RuntimeError(f"Gemini API error: {e}") from e
+    if response.text is None:
+        raise RuntimeError("Gemini returned an empty response")
     return response.text
 
 
